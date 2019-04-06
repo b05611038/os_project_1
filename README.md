@@ -5,9 +5,11 @@ RR  張育堂 <br />
 PSJF 連+ 東逸 <br />
 SJF 翁 <br />
 讀檔+printf前後統整 +report: Natasha <br />
-
+<br />
 定期開會時間：禮拜三下午12:10~13:10 新生102 <br />
-'''
+<br />
+<br />
+```
 安裝syscall教學
 https://medium.com/anubhav-shrimal/adding-a-hello-world-system-call-to-linux-kernel-dad32875872
 我上傳的檔案裡面包含上面文章裡面3, 5, 6的部分
@@ -28,4 +30,4 @@ sudo make bzImage
 sudo make install
 reboot
 就好！不要sudo make modules_install
-'''
+```
