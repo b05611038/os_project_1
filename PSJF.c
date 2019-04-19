@@ -11,23 +11,14 @@
 #include <linux/kernel.h>
 #include <limits.h>
 #include <time.h>
+#include <string.h>
+#include "PSJF.h"
 
-struct process{
-    char name[20];
-    int ready;
-    int exec;
-    int waiting;
-    pid_t pid;
-};
-void unit_time();
-int process_ready(struct process pros);
-int proc_assign_cpu(int pid, int core);
-int find_min_index(struct process *pross,int npc);
-bool some_process_is_ready(struct process *pross,int npc);
 
-int main(int argc, char *argv[])
+
+void PSJF(struct process *proc,int n_proc)
 {
-    //initializing    
+    //initializing
     int time = 0;
     int pre_running=-1;
     int running =-1;
@@ -36,25 +27,6 @@ int main(int argc, char *argv[])
     struct sched_param block, high;
     block.sched_priority=10;
     high.sched_priority=90;
-
-    //reading  process parmeter
-    char policy[16];
-    int n_proc;
-    struct process *proc;
-    FILE *file;
-    file=fopen(argv[1], "r");
-    if (!file)
-    {
-        fprintf(stderr, "error: file open failure\n");
-        exit(1);
-    }
-    fscanf(file, "%s", policy);
-    fscanf(file, "%d", &n_proc);
-    proc=(struct process *)malloc(n_proc*sizeof(struct process));
-    for(int i=0; i<n_proc; i++)
-    {
-        fscanf(file, "%s %d %d", proc[i].name, &proc[i].ready, &proc[i].exec);
-    }
 
     //check if prcoess is ready, fork it if it is ready.
     while(finished_process!=n_proc)
@@ -66,37 +38,38 @@ int main(int argc, char *argv[])
                 proc[i].pid =  process_ready(proc[i]);
                 printf("%d\n",(proc+i)->pid);
                 proc[i].waiting=1;
-                int ret = sched_setscheduler(proc[i].pid, SCHED_FIFO, &block);
+                int ret = sched_setscheduler((proc+i)->pid, SCHED_FIFO, &block);
         		if (ret==-1)
                 {
-                    printf("error");
+                    printf("block error\n");
                 }
             }
         }
-            
+        //printf("test:%d",some_process_is_ready(proc,n_proc));   
         //chose one process to run
         if (some_process_is_ready(proc,n_proc))
-        {
+        {   
             int index = find_min_index(proc,n_proc);
+            //printf("%d",index);
             running=proc[index].pid;
-            if (pre_running==-1)
-            {
-                pre_running=running;
-            }
+
                 //printf("running:%d and pre_running:%d\n",running,pre_running);
             if(running!=pre_running)
             {
-        
-                int ret2 = sched_setscheduler(running, SCHED_FIFO, &high);
-                if (ret2==-1)
+                if(pre_running!=-1)
                 {
-                    printf("error");
+                    int ret2 = sched_setscheduler(pre_running, SCHED_FIFO, &high);
+                    if (ret2==-1)
+                    {
+                        printf("pre_running error%d",pre_running);
+                    }
                 }
-                int ret3 = sched_setscheduler(pre_running, SCHED_FIFO, &block);
+                int ret3 = sched_setscheduler(running, SCHED_FIFO, &block);
                 if (ret3==-1)
                 {
-                    printf("error");
+                    printf("running error:%d ",running);
                 }
+             
             }
             //update 
             pre_running=running;
@@ -110,7 +83,7 @@ int main(int argc, char *argv[])
         unit_time();
         time++;    
     }
-    return 0;
+ 
 }
 
 
@@ -134,7 +107,7 @@ int process_ready(struct process pros)
             for (int i = 0; i < pros.exec; i++)
             {
                 unit_time();
-                //printf("I am : %c \n",name);
+                //printf("I am : %s \n",pros.name);
             }
 
             printf("process name:%s is finished\n",pros.name);
