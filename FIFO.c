@@ -4,13 +4,18 @@
 #include <string.h>
 #include <unistd.h>
 #include <sched.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#define PARENT_CPU 0
+#define CHILD_CPU 1
 
 //define the members of a process
 struct process{
 	char name[16];
 	int ready;
 	int exec;
-	pid_t pid;
+	//pid_t pid;
 };
 
 //define one unit of time
@@ -32,7 +37,7 @@ int main(int argc, char *argv[]){
 
 	if(argc!=2){
 		printf("\ninput format : ./a.out [input file name]\neg: ./a.out testcase_1.txt\n\n");
-		exit(1);
+		exit(0);
 	}
 
 	//read in test file
@@ -53,106 +58,97 @@ int main(int argc, char *argv[]){
 	for(int i=0; i<n_proc; i++){
 		fscanf(file, "%s %d %d", proc[i].name, &proc[i].ready, &proc[i].exec);
 	}
-	/*debug
-	for(int i=0; i<n_proc; i++){
-		printf("%s %d %d\n", proc[i].name, proc[i].ready, proc[i].exec);
-	}
-	printf("%s\n%d\n\n", policy, n_proc);
-	*/
+	
 
 	//start processing
 	if(strcmp(policy, "FIFO")!=0){
 		printf("policy other than FIFO, or invalid policy\n");
-		exit(1);
-	}else{
-		//sort the processes according to ready order
-		qsort(proc, n_proc, sizeof(struct process), compare);
-		//debub	
-		/*
-		for(int i=0; i<n_proc; i++){
-			printf("%s %d %d\n", proc[i].name, proc[i].ready, proc[i].exec);
-		}
-		*/
+		exit(0);
+	}
+	//sort the processes according to ready order
+	qsort(proc, n_proc, sizeof(struct process), compare);
 
-		//assign to one cpu
-		cpu_set_t mask;
-		CPU_ZERO(&mask);
-		CPU_SET(0, &mask);
-		if(sched_setaffinity(getpid(), sizeof(mask), &mask)<0){
-			fprintf(stderr, "sched_setaffinity error\n");
+	//debug	
+	for(int i=0; i<n_proc; i++){
+		printf("%s %d %d\n", proc[i].name, proc[i].ready, proc[i].exec);
+	}
+		
+
+	//assign to one cpu
+	pid_t p_pid=getpid();   //get the parent pid
+	cpu_set_t mask;
+	CPU_ZERO(&mask);
+	CPU_SET(PARENT_CPU, &mask);
+	if(sched_setaffinity(p_pid, sizeof(mask), &mask)<0){
+		fprintf(stderr, "sched_setaffinity error\n");
+		exit(1);
+	}
+
+	//set priority
+	struct sched_param param;
+	param.sched_priority=0;
+	if(sched_setscheduler(p_pid, SCHED_OTHER, &param)<0){
+		fprintf(stderr, "sched_setscheduler error\n");
+		exit(1);
+	}
+
+	int running=0;
+	int time_cnt=0;
+
+	while(running<n_proc){
+		if((proc[running].ready-time_cnt)>0){
+			int temp=time_cnt;
+			for(int i=0; i < (proc[running].ready-temp); i++){
+				time_unit();
+				time_cnt++;
+			}
+		}
+					
+		int c_pid=fork();
+		if(c_pid<0){
+			fprintf(stderr, "fork failed\n");
 			exit(1);
 		}
+		if(c_pid==0){
+			printf("process %s started    time : %d   pid: %d\n", proc[running].name, time_cnt, getpid());
 
-		//set priority
-		struct sched_param param;
-		param.sched_priority=0;
-		if(sched_setscheduler(getpid(), SCHED_OTHER, &param)<0){
-			fprintf(stderr, "sched_setscheduler error\n");
-		}
-
-		//start counting time
-		int time_cnt=0;
-		//record current process's number
-		int tmp=0;
-		//start time
-		int start_t=proc[0].ready;
-		//end time
-		int end_t=start_t+proc[0].exec;
-
-		//run one unit of time for each loop
-		while(1){
-
-			if(time_cnt==start_t && time_cnt==end_t){
-				//kill child process
-				//printf("time : %d    %s killed\n", time_cnt, proc[tmp].name);   //debug
-				// set new tmp
-				tmp++;
-				// set new end_t
-				end_t=time_cnt+proc[tmp].exec;
-				// set new start_t
-				if(tmp+1>=n_proc){
-						
-				}else if(proc[tmp+1].ready>end_t){
-					start_t=proc[tmp+1].ready;
-				}else{
-					start_t=end_t;
-				}
-				// fork a child
-				//proc[tmp].pid=fork();
-				//printf("time : %d    %s created\n", time_cnt, proc[tmp].name);  //debug
-		
-			}else if(time_cnt==start_t){
-				// set new start_t
-				if(tmp+1>=n_proc){
-					
-				}else if(proc[tmp+1].ready>end_t){
-					start_t=proc[tmp+1].ready;
-				}else{
-					start_t=end_t;
-				}
-				// fork a child
-				//proc[tmp].pid=fork();
-				//printf("time : %d    %s created\n", time_cnt, proc[tmp].name);  //debug
-
-			}else if(time_cnt==end_t){
-				// kill child process
-				//printf("time : %d    %s killed\n", time_cnt, proc[tmp].name);   //debug
-				// set new tmp
-				tmp++;
-				// set new end_t
-				end_t=start_t+proc[tmp].exec;
-
-			}else if(time_cnt!=start_t && time_cnt!=end_t){
-
-			}else{
-				printf("logic error\n");
-				exit(0);
+			for(int j=0; j < proc[running].exec; j++){
+				time_unit();
+				time_cnt++;
 			}
 
-			time_unit();
-			time_cnt++;
-			if(tmp==n_proc) break;   //if the last process has finished its job, leave while loop and end main
+			printf("process %s ended      time : %d\n", proc[running].name, time_cnt);
+			
+			exit(0);
+		}else{
+			
+			time_cnt=time_cnt+proc[running].exec;
+
+			//set CPU for child process
+			cpu_set_t mask2;
+			CPU_ZERO(&mask2);
+			CPU_SET(CHILD_CPU, &mask2);
+			if(sched_setaffinity(c_pid, sizeof(mask2), &mask2)<0){
+				fprintf(stderr, "sched_setaffinity error\n");
+				exit(1);
+			}
+		
+			struct sched_param param2;
+			param2.sched_priority=0;
+			if(sched_setscheduler(c_pid, SCHED_OTHER, &param2)<0){
+				fprintf(stderr, "sched_setscheduler error\n");
+				exit(1);
+			}
+
+			waitpid(c_pid, NULL, 0);
+
 		}
+		
+		running++;
+
 	}
+
+
+	
 	return 0;
 }
