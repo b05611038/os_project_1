@@ -13,6 +13,7 @@
 #include <time.h>
 #include <string.h>
 #include "PSJF.h"
+#include "RR.h"
 
 int main(int argc, char *argv[])
 {
@@ -37,9 +38,11 @@ int main(int argc, char *argv[])
         fscanf(file, "%s %d %d", proc[i].name, &proc[i].ready, &proc[i].exec);
     }
     if (strcmp(policy, "PSJF") == 0)
-    {
-    	
-    	PSJF(proc,n_proc);
+    {    	
+        PSJF(proc,n_proc);
     }
-
+    else if (strcmp(policy, "RR") == 0)
+    {
+        RR(proc, n_proc);
+    } 
 }

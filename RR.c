@@ -7,18 +7,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#define CHILD_CPU 1
-#define PARENT_CPU 0
-#define FIFO	1
-#define RR	2
-#define SJF	3
-#define PSJF	4
-
-#define Unit_time()                   \
-{                                     \
-  volatile unsigned long t;           \
-  for (t = 0; t < 1000000UL; t++);    \
-}                                     \
 
 static int interval = 300;
 
@@ -29,13 +17,6 @@ int time_last;
 int running;
 
 int finish_cnt;
-
-struct Process {
-  char name[8];
-  int ready;
-  int remain;
-  pid_t pid;
-};
 
 int compare(const void *a, const void *b) {
   return ((struct Process *)a) -> ready - ((struct Process *)b) -> ready;
@@ -53,8 +34,8 @@ int RR_next(struct Process *proc, int num_process) {
     }
   } else if ((time_now - time_last) % interval == 0) {
       ret = (running + 1) % num_process;
-      //printf("assign switch\n");
       while (proc[ret].pid == -1 || proc[ret].remain == 0)
+        
         ret = (ret + 1) % num_process;
     } else {
       ret = running;
@@ -132,7 +113,9 @@ int proc_wakeup(int pid) {
   return ret;
 }
 
-int main(int argc, char **argv) {
+//int main(int argc, char **argv) {
+void RR(struct Process *proc, int num_process)
+  /*
   if (argc != 2) {
     printf("Usage: ./RR.out [input file name]\n");
     exit(1);
@@ -165,6 +148,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Invalid policy: %s.\n", sched_policy);
     exit(1);
   }
+  */
 
   //sort process by ready time
   qsort(proc, num_process, sizeof(struct Process), compare);
@@ -198,6 +182,10 @@ int main(int argc, char **argv) {
     if (running != -1 && proc[running].remain == 0) {
       waitpid(proc[running].pid, NULL, 0);
       printf("Finish %s %d %d\n", proc[running].name, proc[running].pid, time_now);
+      /*
+      syscall block (finish time)
+      */
+
       wait = wait + time_now - proc[running].ready - proc[running].remain;
       running = -1;
       finish_cnt++;
@@ -212,7 +200,10 @@ int main(int argc, char **argv) {
         proc[i].pid = proc_exec(proc[i]);
         proc_block(proc[i].pid);
 
-	//printf("%s ready at time %d.\n", proc[i].name, time_now);
+	printf("%s ready at time %d.\n", proc[i].name, time_now);
+        /*
+        syscall for pid can start
+        */
       }
     }
 
@@ -221,7 +212,6 @@ int main(int argc, char **argv) {
 
     if (next != -1) {
       if (running != next) {
-	//printf("Switch\n");
         proc_wakeup(proc[next].pid);
         proc_block(proc[running].pid);
         running = next;
@@ -236,13 +226,11 @@ int main(int argc, char **argv) {
     }
     time_now++;
 
-    //if (time_now % 100 == 0)
-    // printf("time: %d Next: %d Process remain: %d\n", time_now, next, proc[running].remain);
   }
 
   float avg_wait = (float)wait / (float)num_process;
   printf("Average waiting time: %.2f\n", avg_wait);
-  return 0;
+  //return 0;
 }
 
 
