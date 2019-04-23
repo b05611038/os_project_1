@@ -43,6 +43,8 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(policy, "RR") == 0)
     {
-        RR(proc, n_proc);
-    } 
+        RR_main(proc, n_proc);
+    }
+
+    return 0;
 }
