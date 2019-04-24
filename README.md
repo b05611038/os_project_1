@@ -31,3 +31,12 @@ sudo make install
 reboot
 就好！不要sudo make modules_install
 ```
+
+Report要寫的東西<br />
+##設計
+
+##執行範例測資的結果
+
+##比較實際結果與理論結果，並解釋造成差異的原因
+
+##各組員的貢獻
