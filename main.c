@@ -14,6 +14,8 @@
 #include <string.h>
 #include "PSJF.h"
 #include "RR.h"
+#include "SJF.h"
+
 
 int main(int argc, char *argv[])
 {
@@ -44,7 +46,13 @@ int main(int argc, char *argv[])
     else if (strcmp(policy, "RR") == 0)
     {
         RR_main(proc, n_proc);
-    }
-
+		}
+		else if(strcmp(policy, "SJF")==0){
+		
+		    
+		    SJF(proc, n_proc);
+		
+		}
+ 
     return 0;
 }
