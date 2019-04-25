@@ -1,6 +1,7 @@
 #ifndef _PSJF_
 #define _PSJF_
 
+#include <stdbool.h>
 
 struct process{
     char name[20];

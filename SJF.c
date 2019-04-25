@@ -36,7 +36,7 @@ static int running;
 
 /* Number of finish Process */
 static int finish_cnt;
-
+/*
 int proc_assign_cpu(int pid, int core){
 
 	if (core > sizeof(cpu_set_t)) {
@@ -60,7 +60,7 @@ int proc_assign_cpu(int pid, int core){
 	}
   return 0;
 }
-
+*/
 /* Sort processes by ready time */
 int cmp(const void *a, const void *b) {
 	return ((struct process *)a)->ready - ((struct process *)b)->ready;

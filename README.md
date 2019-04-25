@@ -32,6 +32,16 @@ reboot
 就好！不要sudo make modules_install
 ```
 
+```
+How to compile main
+
+gcc -c *.c
+gcc *.o -o main
+
+Be careful about redefinition of same function (compare or assign_cpu ... )
+If header file need to use the function defined in other header, please inlcude the header file in both .h and .c
+```
+
 Report要寫的東西<br />
 ##設計
 

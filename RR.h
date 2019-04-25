@@ -2,6 +2,7 @@
 #define _RR_
 
 #include <sys/types.h>
+#include "PSJF.h"
 
 #define CHILD_CPU 1
 #define PARENT_CPU 0
@@ -16,7 +17,7 @@
 int RR_next(struct process *proc, int num_process);
 
 // init cpu
-int proc_assign_cpu(int pid, int core);
+//int proc_assign_cpu(int pid, int core);
 
 // execute process
 int proc_exec(struct process proc); 

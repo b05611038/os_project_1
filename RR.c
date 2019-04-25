@@ -21,7 +21,7 @@ int running;
 int finish_cnt;
 
 
-int compare(const void *a, const void *b) {
+int RR_compare(const void *a, const void *b) {
   return ((struct process *)a) -> ready - ((struct process *)b) -> ready;
 }
 
@@ -66,14 +66,14 @@ int proc_exec(struct process proc) {
 
   return pid;
 }
-
+/*
 int proc_assign_cpu(int pid, int core) {
   if (core > sizeof(cpu_set_t)) {
     fprintf(stderr, "Core index error.");
     return -1;
   }
 
-  /* init CPU */
+  // init CPU 
   cpu_set_t mask;
   CPU_ZERO(&mask);
   CPU_SET(core, &mask);
@@ -85,7 +85,7 @@ int proc_assign_cpu(int pid, int core) {
 
   return 0;
 }
-
+*/
 
 int proc_block(int pid) {
   struct sched_param param;
@@ -152,7 +152,7 @@ void RR_main(struct process *proc, int num_process) {
   */
 
   //sort process by ready time
-  qsort(proc, num_process, sizeof(struct process), compare);
+  qsort(proc, num_process, sizeof(struct process), RR_compare);
 
   //initial PID
   for (int i = 0; i < num_process; i++) {

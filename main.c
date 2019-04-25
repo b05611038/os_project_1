@@ -19,8 +19,6 @@
 
 int main(int argc, char *argv[])
 {
-    
-
     //reading  process parmeter
     char policy[16];
     int n_proc;
@@ -46,13 +44,13 @@ int main(int argc, char *argv[])
     else if (strcmp(policy, "RR") == 0)
     {
         RR_main(proc, n_proc);
-		}
-		else if(strcmp(policy, "SJF")==0){
+    }
+    else if(strcmp(policy, "SJF") == 0)
+    {
+				    
+    SJF(proc, n_proc);
 		
-		    
-		    SJF(proc, n_proc);
-		
-		}
+    }
  
     return 0;
 }
