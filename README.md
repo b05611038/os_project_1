@@ -41,7 +41,19 @@ gcc *.o -o main
 Be careful about redefinition of same function (compare or assign_cpu ... )
 If header file need to use the function defined in other header, please inlcude the header file in both .h and .c
 ```
+```
+syscall的用法
 
+fork出新的process後,加上以下程式
+struct timespec start, end;
+syscall(333, &start);
+
+process完成後，加上以下程式
+syscall(333, &end);
+char info[256];
+sprintf(info, "[project1] %d %lu.%09lu %lu.%09lu\n", getpid(), start.tv_sec, start.tv_nsec, end.tv_sec, end.tv_nsec);
+syscall(334, info);
+```
 Report要寫的東西<br />
 ##設計
 
