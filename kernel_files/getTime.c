@@ -5,12 +5,11 @@
 
 asmlinkage int sys_getTime(struct timespec *t){
     getnstimeofday(t);
-//    printk("time = %lu.%lu\n", (*t).tv_sec, (*t).tv_nsec);
     return 0;
 }
 
-asmlinkage int sys_printk(char* a){
-    printk("%s\n", a);
+asmlinkage int sys_printk(char* input){
+    printk("%s\n", input);
     return 0;
 }
 
