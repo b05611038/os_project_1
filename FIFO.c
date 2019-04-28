@@ -6,17 +6,9 @@
 #include <sched.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "FIFO.h"
 
-#define PARENT_CPU 0
-#define CHILD_CPU 1
 
-//define the members of a process
-struct process{
-	char name[16];
-	int ready;
-	int exec;
-	//pid_t pid;
-};
 
 //define one unit of time
 void time_unit()
@@ -33,38 +25,7 @@ int compare(const void *p1, const void *p2){
 }
 
 
-int main(int argc, char *argv[]){
-
-	if(argc!=2){
-		printf("\ninput format : ./a.out [input file name]\neg: ./a.out testcase_1.txt\n\n");
-		exit(0);
-	}
-
-	//read in test file
-	char policy[16];
-	int n_proc;
-	struct process *proc;
-
-	FILE *file;
-	file=fopen(argv[1], "r");
-	if (!file){
-		fprintf(stderr, "error: file open failure\n");
-		exit(1);
-	}
-	
-	fscanf(file, "%s", policy);
-	fscanf(file, "%d", &n_proc);
-	proc=(struct process *)malloc(n_proc*sizeof(struct process));
-	for(int i=0; i<n_proc; i++){
-		fscanf(file, "%s %d %d", proc[i].name, &proc[i].ready, &proc[i].exec);
-	}
-	
-
-	//start processing
-	if(strcmp(policy, "FIFO")!=0){
-		printf("policy other than FIFO, or invalid policy\n");
-		exit(0);
-	}
+void FIFO(struct process *proc, int n_proc){
 	//sort the processes according to ready order
 	qsort(proc, n_proc, sizeof(struct process), compare);
 
@@ -148,7 +109,4 @@ int main(int argc, char *argv[]){
 
 	}
 
-
-	
-	return 0;
 }

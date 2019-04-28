@@ -1,8 +1,11 @@
+#ifndef _FIFO_
+#define _FIFO_
+
 
 #define PARENT_CPU 0
 #define CHILD_CPU 1
 
-//define the members of a process
+//members of proc
 struct process{
 	char name[16];
 	int ready;
@@ -14,5 +17,8 @@ struct process{
 void time_unit();
 //function called by qsort
 int compare(const void *p1, const void *p2);
+//main function
 void FIFO(struct process *proc, int n_proc);
 
+
+#endif
