@@ -15,7 +15,6 @@
 #include "PSJF.h"
 #include "RR.h"
 #include "SJF.h"
-#include "FIFO.h"
 
 
 int main(int argc, char *argv[])
@@ -38,7 +37,6 @@ int main(int argc, char *argv[])
     {
         fscanf(file, "%s %d %d", proc[i].name, &proc[i].ready, &proc[i].exec);
     }
-
     if (strcmp(policy, "PSJF") == 0)
     {    	
         PSJF(proc,n_proc);
@@ -48,16 +46,10 @@ int main(int argc, char *argv[])
         RR_main(proc, n_proc);
     }
     else if(strcmp(policy, "SJF") == 0)
-    {			    
-    	SJF(proc, n_proc);		
-    }
-    else if(strcmp(policy, "FIFO") == 0)
     {
-	FIFO(proc, n_proc);
-    }
-    else
-    {
-	printf("policy not supported\n");
+				    
+    SJF(proc, n_proc);
+		
     }
  
     return 0;
