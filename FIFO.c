@@ -6,6 +6,7 @@
 #include <sched.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "PSJF.h"
 #include "FIFO.h"
 
 

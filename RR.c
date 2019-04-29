@@ -10,7 +10,7 @@
 #include "RR.h"
 #include "PSJF.h"
 
-static int interval = 300;
+static int interval = 500;
 
 int time_now;
 
