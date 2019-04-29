@@ -72,11 +72,65 @@ syscall(334, info);
 1556531137	1556531140	0.00487402
 		     平均單位時間 0.004897285
 ```
+
 Report要寫的東西<br />
 ##設計
+```
+資料讀進來之後，processes先依照ready time排序，
+固定把parent process指定給0號CPU，child processes固定給1號CPU
+一旦時間數到process的ready time，就fork一個child process開始執行，
+parent process每經過一單位的時間，都要檢查process有沒有ready和可不可以執行。
+每一單位時間都會看有沒有需要做context switch，換另一個process。
 
+看process的execution time，如果有很多個processes都已經ready，execution tim短的會先執行。假如大家execution time都相同，則用FIFO。
+下一個要執行的人用sched_setscheduler把他的priority排到最優先。剛生成的child process則是先使其idle。
+```
 ##執行範例測資的結果
+```
+
+SJF_1
+P2 25769
+P3 25770
+P4 25771
+P1 25768
+
+
+SJF_2
+P1 25793
+P3 25795
+P2 25794
+P4 25796
+P5 25797
+
+
+SJF_3
+P1 25941
+P4 25944
+P5 25945
+P6 25946
+P7 25947
+P2 25942
+P3 25943
+P8 25948
+
+SJF_4
+P1 25971
+P2 25972
+P3 25973
+P5 25975
+P4 25974
+
+
+SJF_5
+P1 25996
+P2 25997
+P3 25998
+P4 25999
+```
 
 ##比較實際結果與理論結果，並解釋造成差異的原因
+```
+實際結果會比理論結果高，可能是因為有context switch, I/O等
+```
 
 ##各組員的貢獻
