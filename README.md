@@ -76,61 +76,62 @@ syscall(334, info);
 Report要寫的東西<br />
 ##設計
 ```
-資料讀進來之後，processes先依照ready time排序，
-固定把parent process指定給0號CPU，child processes固定給1號CPU
-一旦時間數到process的ready time，就fork一個child process開始執行，
-parent process每經過一單位的時間，都要檢查process有沒有ready和可不可以執行。
+資料讀進來之後，processes先依照ready time排序，固定把parent process指定給0號CPU，child processes固定給1號CPU
+一旦時間數到process的ready time，就fork一個child process開始執行，parent process每經過一單位的時間，都要檢查process有沒有ready和可不可以執行。
 每一單位時間都會看有沒有需要做context switch，換另一個process。
 
+以下是SJF的部分：
 看process的execution time，如果有很多個processes都已經ready，execution tim短的會先執行。假如大家execution time都相同，則用FIFO。
 下一個要執行的人用sched_setscheduler把他的priority排到最優先。剛生成的child process則是先使其idle。
+
 ```
 ##執行範例測資的結果
 ```
 
-SJF_1
-P2 25769
-P3 25770
-P4 25771
-P1 25768
+SJF_1.txt
+
+P2 2390
+P3 2391
+P4 2392
+P1 2389
+
+Kernel message:
+[ 1406.409832] [project1] 2390 1556544190.759966787 1556544200.774568832
+
+[ 1411.353650] [project1] 2391 1556544200.774896825 1556544205.720828630
+
+[ 1431.160801] [project1] 2392 1556544205.721074096 1556544225.537913709
+
+[ 1465.822437] [project1] 2389 1556544200.774764164 1556544260.216880908
 
 
-SJF_2
-P1 25793
-P3 25795
-P2 25794
-P4 25796
-P5 25797
 
-
-SJF_3
-P1 25941
-P4 25944
-P5 25945
-P6 25946
-P7 25947
-P2 25942
-P3 25943
-P8 25948
-
-SJF_4
-P1 25971
-P2 25972
-P3 25973
-P5 25975
-P4 25974
-
-
-SJF_5
-P1 25996
-P2 25997
-P3 25998
-P4 25999
 ```
 
 ##比較實際結果與理論結果，並解釋造成差異的原因
 ```
 實際結果會比理論結果高，可能是因為有context switch, I/O等
+實際值計算方法，用kernel message的 (end time-start time)/0.004897285
+0.004897285是
+
+SJF_1.txt 
+P1 0 7000
+P2 0 2000       
+P3 100 1000
+P4 200 4000
+
+理論值             
+P2 2000
+P3 1000 
+P4 4000 
+P1 7000
+
+實際值
+P2 2044.928844
+P3 1009.932987
+P4 4046.49486
+P1 12137.7694
+
 ```
 
 ##各組員的貢獻
