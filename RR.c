@@ -10,6 +10,7 @@
 #include "RR.h"
 #include "PSJF.h"
 
+
 static int interval = 500;
 
 int time_now;
@@ -56,16 +57,23 @@ int proc_exec(struct process proc) {
   }
 
   if (pid == 0) {
+    //struct timespec start, end;
+    //syscall(333, &start);
     for (int i = 0; i < proc.exec; i++) {
       Unit_time();
-      exit(0);
     }
+    //syscall(333, &end);
+    //char info[256];
+    //sprintf(info, "[project1] %d %lu.%09lu %lu.%09lu\n", getpid(), start.tv_sec, start.tv_nsec, end.tv_sec, end.tv_nsec);
+    //syscall(334, info);
+    exit(0);
   }
 
   proc_assign_cpu(pid, CHILD_CPU);
 
   return pid;
 }
+
 /*
 int proc_assign_cpu(int pid, int core) {
   if (core > sizeof(cpu_set_t)) {
@@ -183,9 +191,6 @@ void RR_main(struct process *proc, int num_process) {
     if (running != -1 && proc[running].exec == 0) {
       waitpid(proc[running].pid, NULL, 0);
       printf("Finish %s %d %d\n", proc[running].name, proc[running].pid, time_now);
-      /*
-      syscall block (finish time)
-      */
 
       wait = wait + time_now - proc[running].ready - proc[running].exec;
       running = -1;
@@ -202,9 +207,6 @@ void RR_main(struct process *proc, int num_process) {
         proc_block(proc[i].pid);
 
 	printf("%s ready at time %d.\n", proc[i].name, time_now);
-        /*
-        syscall for pid can start
-        */
       }
     }
 
