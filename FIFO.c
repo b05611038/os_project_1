@@ -10,6 +10,11 @@
 #include "FIFO.h"
 
 
+int running;
+int finish;
+int time_cnt;
+
+
 
 //define one unit of time
 void time_unit()
@@ -25,97 +30,127 @@ int compare(const void *p1, const void *p2){
 	if(((struct process *)p1)->ready > ((struct process *)p2)->ready) return 1;
 }
 
+int proc_assign_cpu(int pid, int core){
+	cpu_set_t mask;
+	CPU_ZERO(&mask);
+	CPU_SET(core, &mask);
+	if(sched_setaffinity(pid, sizeof(mask), &mask)<0){
+		fprintf(stderr, "sched_setaffinity error\n");
+		exit(1);
+	}
+	return 0;
+}
+
+int proc_wakeup(int pid){
+	struct sched_param param;
+	param.sched_priority=0;
+	int ret=sched_setscheduler(pid, SCHED_OTHER, &param);
+	if(ret<0){
+		fprintf(stderr, "------wake up error------\n");
+		return -1;
+	}
+	return ret;
+}
+
+int proc_exec(struct process proc){
+	int pid=fork();
+	if(pid<0){
+		fprintf(stderr, "fork failed\n");
+		return -1;
+	}	
+	if(pid==0){
+		printf("process %s forked    time : %d   pid: %d\n", proc.name, time_cnt, getpid());
+		for(int i=0; i < proc.exec; i++){
+			time_unit();
+		}
+		printf("process %s exited     time : %d\n", proc.name, time_cnt);
+
+		exit(0);
+	}
+	proc_assign_cpu(pid, CHILD_CPU);
+	
+	return pid;
+}
+
+
+int proc_block(int pid){
+	struct sched_param param;
+	param.sched_priority=0;
+	int ret=sched_setscheduler(pid, SCHED_IDLE, &param);
+	if(ret<0) {
+		fprintf(stderr, "sched idle error\n");
+		return -1;
+	}
+	return ret;
+}
+
+int next_proc(struct process *proc, int n_proc){
+	if(running != -1){
+		return running;
+	}
+	int ret=-1;
+	for(int i=0; i<n_proc; i++){
+		if(proc[i].pid==-1 || proc[i].exec==0) continue;
+		if(ret==-1 || proc[i].ready < proc[ret].ready) ret=i;
+	}
+	return ret;
+}
+
+
 
 void FIFO(struct process *proc, int n_proc){
 	//sort the processes according to ready order
 	qsort(proc, n_proc, sizeof(struct process), compare);
-
-	//debug	
 	for(int i=0; i<n_proc; i++){
 		printf("%s %d %d\n", proc[i].name, proc[i].ready, proc[i].exec);
-	}
+	}	
 	
 	for(int i=0; i<n_proc; i++){
 		proc[i].pid=-1;
 	}
 
-	//assign to one cpu
-	pid_t p_pid=getpid();   //get the parent pid
-	cpu_set_t mask;
-	CPU_ZERO(&mask);
-	CPU_SET(PARENT_CPU, &mask);
-	if(sched_setaffinity(p_pid, sizeof(mask), &mask)<0){
-		fprintf(stderr, "sched_setaffinity error\n");
-		exit(1);
-	}
+	proc_assign_cpu(getpid(), PARENT_CPU);
+	proc_wakeup(getpid());
+	printf("parent CPU assigned\n");
 
-	//set priority
-	struct sched_param param;
-	param.sched_priority=0;
-	if(sched_setscheduler(p_pid, SCHED_OTHER, &param)<0){
-		fprintf(stderr, "sched_setscheduler error\n");
-		exit(1);
-	}
+	running=-1;
+	time_cnt=0;
+	finish=0;
 
-	int running=0;
-	int time_cnt=0;
-	
 	while(1){
-		if(proc[running].exec==0){
+		if(running!=-1 && proc[running].exec==0){
 			waitpid(proc[running].pid, NULL, 0);
 			printf("process %s ended     time : %d\n", proc[running].name, time_cnt);
-			running++;
-			if(running==n_proc) break;
+			running=-1;
+			finish++;
+			if(finish==n_proc) break;
 		}
 
 		for(int i=0; i<n_proc; i++){
 			if(proc[i].ready==time_cnt){
-				proc[i].pid=fork();
-				if(proc[i].pid<0){
-					fprintf(stderr, "fork failed\n");
-					exit(1);
-				}
-				if(proc[i].pid==0){
-					printf("process %s forked    time : %d   pid: %d\n", proc[i].name, time_cnt, getpid());
-					for(int j=0; j < proc[running].exec; j++){
-						time_unit();
-						//time_cnt++;
-					}
-					printf("process %s exited     time : %d\n", proc[i].name, time_cnt);
-					exit(0);
-				}
-				//set CPU for child process
-				cpu_set_t mask2;
-				CPU_ZERO(&mask2);
-				CPU_SET(CHILD_CPU, &mask2);
-				if(sched_setaffinity(proc[i].pid, sizeof(mask2), &mask2)<0){
-					fprintf(stderr, "sched_setaffinity error\n");
-					exit(1);
-				}
-		
-				struct sched_param param2;
-				param2.sched_priority=0;
-				if(sched_setscheduler(proc[i].pid, SCHED_IDLE, &param2)<0){
-					fprintf(stderr, "sched_setscheduler2 error\n");
-					exit(1);
-				}	
+				proc[i].pid=proc_exec(proc[i]);
+				proc_block(proc[i].pid);					
 			}
 		}
-		if(proc[running+1].pid!=-1 && proc[running].exec==0){
-			running++;
-			struct sched_param param3;
-			param3.sched_priority=0;
-			if(sched_setscheduler(proc[running].pid, SCHED_OTHER, &param3)<0){
-				fprintf(stderr, "sched_setscheduler3 error\n");
-				exit(1);
+
+		int next=next_proc(proc, n_proc);
+		if(next!=-1){
+			if (running!=next){
+				printf("!!!!!!context switch!!!!!!\n");
+				proc_wakeup(proc[next].pid);
+				proc_block(proc[running].pid);
+
+				running=next;
 			}
-		
 		}
+
 		time_unit();
 		time_cnt++;
-		if(proc[running].pid!=-1){
+
+		if(running!=-1){
 			proc[running].exec--;
 		}
 	}
+
 	return 0;
 }
